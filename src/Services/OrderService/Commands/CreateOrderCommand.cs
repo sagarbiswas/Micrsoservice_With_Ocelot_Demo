@@ -1,7 +1,10 @@
 using Common.Commands;
+using Common.Events;
 using Common.Models;
+using EventBus;
 using MediatR;
 using OrderService.Data;
+using OrderService.Events;
 using OrderService.Models;
 
 namespace OrderService.Commands;
@@ -13,10 +16,12 @@ public record OrderItemDto(Guid ProductId, string ProductName, int Quantity, dec
 public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Guid>
 {
     private readonly OrderDbContext _context;
+    private readonly IEventBus _eventBus;
 
-    public CreateOrderCommandHandler(OrderDbContext context)
+    public CreateOrderCommandHandler(OrderDbContext context, IEventBus eventBus)
     {
         _context = context;
+        _eventBus = eventBus;
     }
 
     public async Task<Result<Guid>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -42,6 +47,28 @@ public class CreateOrderCommandHandler : ICommandHandler<CreateOrderCommand, Gui
         _context.Orders.Add(order);
         await _context.SaveChangesAsync(cancellationToken);
 
+        // send notification 
+        try
+        {
+            await CreateNotification(order);
+        }
+        catch (Exception e) // May be kafka not working.
+        {
+          Console.WriteLine(e);
+        }
+      
         return Result.Success(order.Id);
+    }
+
+    private async Task CreateNotification(Order order)
+    {
+        var orderEvent = new Events.OrderCreatedEvent(
+            Guid.NewGuid(),
+            DateTime.UtcNow,
+            order.Id,
+            order.CustomerName,
+            order.TotalAmount
+        );
+        await _eventBus.PublishAsync<OrderCreatedEvent>(orderEvent, "order-topic");
     }
 }

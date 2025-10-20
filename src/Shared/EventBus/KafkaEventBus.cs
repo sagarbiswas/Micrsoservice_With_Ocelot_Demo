@@ -18,9 +18,9 @@ public class KafkaEventBus : IEventBus
         _logger = logger;
     }
 
-    public async Task PublishAsync<T>(T @event) where T : class, IIntegrationEvent
+    public async Task PublishAsync<T>(T @event,string topic) where T : class, IIntegrationEvent
     {
-        var topic = typeof(T).Name;
+        topic = string.IsNullOrEmpty(topic) ? typeof(T).Name : topic;
         var message = JsonSerializer.Serialize(@event);
         
         await _producer.ProduceAsync(topic, new Message<string, string>
@@ -32,9 +32,9 @@ public class KafkaEventBus : IEventBus
         _logger.LogInformation("Published event {EventType} with ID {EventId}", typeof(T).Name, @event.Id);
     }
 
-    public async Task SubscribeAsync<T>(Func<T, Task> handler) where T : class, IIntegrationEvent
+    public async Task SubscribeAsync<T>(Func<T, Task> handler, string? topic) where T : class, IIntegrationEvent
     {
-        var topic = typeof(T).Name;
+         topic = string.IsNullOrEmpty(topic)? typeof(T).Name: topic;
         _consumer.Subscribe(topic);
 
         await Task.Run(async () =>
