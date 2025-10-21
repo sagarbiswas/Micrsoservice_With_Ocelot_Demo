@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProductService.Queries;
 
@@ -16,6 +17,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpGet] //https://localhost:7000/api/Products
+    [Authorize]
     public async Task<IActionResult> GetProducts()
     {
         var result = await _mediator.Send(new GetProductsQuery());
