@@ -1,3 +1,4 @@
+using JwtAuthenticationManager;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -5,11 +6,9 @@ using ProductService.Data;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
-//builder.WebHost.ConfigureKestrel(options =>
-//{
-//    options.ListenAnyIP(7002);
-//});
-// Add services
+builder.Services.AddSingleton<JwtAuthenticationManager.JwtTokenHandler>();
+builder.Services.AddCustomJwtAuthExtension(builder.Configuration);
+/* // This is not required as we can use now the common JwtAuthenticationManger project.
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -30,7 +29,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-
+*/
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

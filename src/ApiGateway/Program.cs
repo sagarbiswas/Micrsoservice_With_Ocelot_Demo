@@ -1,14 +1,20 @@
-using System.Text;
+using JwtAuthenticationManager;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
+using Ocelot.Cache.CacheManager;
 using Ocelot.DependencyInjection;
 using Ocelot.Middleware;
-using Ocelot.Cache.CacheManager;
-using Microsoft.AspNetCore.RateLimiting;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOcelot(builder.Configuration);
+builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<JwtAuthenticationManager.JwtTokenHandler>();
+// This is from JwtAuthenticationManger project and can inject without writing in api project.
+builder.Services.AddCustomJwtAuthExtension(builder.Configuration); 
 
+/*
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -65,7 +71,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
-
+*/
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true);
 
 var app = builder.Build();

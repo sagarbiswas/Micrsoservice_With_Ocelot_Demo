@@ -1,10 +1,12 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Common.Models;
+using JwtAuthenticationManager;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using System.Configuration;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace ApiGateway.Controllers;
 
@@ -13,9 +15,10 @@ namespace ApiGateway.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IConfiguration _configuration;
-
-    public AuthController(IConfiguration configuration)
+    private readonly JwtTokenHandler _JwtTokenHandler;
+    public AuthController(IConfiguration configuration, JwtTokenHandler jwtTokenHandler)
     {
+        _JwtTokenHandler = jwtTokenHandler;
         _configuration = configuration;
     }
     /// <summary>
@@ -27,21 +30,22 @@ public class AuthController : ControllerBase
     public ActionResult<LoginResponse> Login([FromBody] LoginRequest request)
     {
         // TODO: Add actual user validation logic
-        if (request.Username != "demo" || request.Password != "demo123")
+        if (request.Username == "nonuser" || string.IsNullOrEmpty(request.Password))
         {
             return Unauthorized();
         }
-
-        var token = GenerateJwtToken(request.Username);
-        
+        var token = _JwtTokenHandler.GenerateJwtToken(request.Username, "least privilege user");
         return Ok(new LoginResponse
         {
             Token = token,
             Username = request.Username,
-            Expiration = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["JwtSettings:ExpirationMinutes"]))
+            Expiration = DateTime.UtcNow.AddMinutes(Convert.ToDouble(string.IsNullOrEmpty(_configuration["JwtSettings:ExpirationMinutes"]) 
+            ? Constants.ExpirationMinutes 
+            : Convert.ToInt32(_configuration["JwtSettings:ExpirationMinutes"])))
         });
+       
     }
-
+     /* // Moved to common JwtAuthenticaitonManager
     private string GenerateJwtToken(string username)
     {
         var secretKey = _configuration["JwtSettings:SecretKey"];
@@ -70,4 +74,5 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+     */
 }
